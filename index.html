@@ -352,9 +352,33 @@ input, select{
           </section>
         </section>
 
+        <!-- Updated Settings section with detailed form -->
         <section id="settingsSection" style="display:none">
           <h3>Settings</h3>
-          <p>Settings panel placeholder content.</p>
+          <form style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+            <div>
+              <label for="name">Name</label>
+              <input type="text" id="name" value="Finn Robinson" />
+            </div>
+            <div>
+              <label for="email">Email</label>
+              <input type="email" id="email" value="finn@example.com" />
+            </div>
+            <div>
+              <label for="password">Password</label>
+              <input type="password" id="password" placeholder="Enter new password" />
+            </div>
+            <div>
+              <label for="notifications">Notification Preferences</label>
+              <select id="notifications">
+                <option>Email & SMS</option>
+                <option>Email only</option>
+                <option>SMS only</option>
+                <option>None</option>
+              </select>
+            </div>
+            <button type="submit" class="btn">Save Changes</button>
+          </form>
         </section>
 
         <!-- New Statements section -->
