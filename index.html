@@ -16,6 +16,8 @@ body{
   margin:0;
   background:linear-gradient(180deg,#f4f6fb 0%,#eef2f6 100%);
   color:#0f1724;
+  /* Add margin-top to create space for the heading */
+  margin-top:60px;
 }
 .app{
   display:grid;
@@ -192,6 +194,9 @@ input, select{
 </style>
 </head>
 <body>
+<!-- Add the heading at the top-left corner with id "topHeading" -->
+<h1 id="topHeading" style="position:absolute; top:10px; left:20px; z-index:999; margin:0;">Bank of America — Online Banking</h1>
+
 <div class="app">
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
@@ -474,6 +479,9 @@ function showSidebar() {
   document.addEventListener('click', outsideClickListener);
   if(window.innerWidth > 980){
     $('menuBtn').style.display='none';
+  } else {
+    // Hide heading on mobile when menu opens
+    $('topHeading').style.display='none';
   }
 }
 function hideSidebar() {
@@ -481,8 +489,12 @@ function hideSidebar() {
   document.removeEventListener('click', outsideClickListener);
   if(window.innerWidth > 980){
     $('menuBtn').style.display='block';
+  } else {
+    // Show heading again when menu closes
+    $('topHeading').style.display='block';
   }
 }
+
 function outsideClickListener(e) {
   if (!sidebar.contains(e.target) && e.target !== menuBtn) {
     hideSidebar();
