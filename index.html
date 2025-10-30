@@ -36,6 +36,7 @@ body{
   top:18px;
   overflow:auto;
   transition: transform 0.3s ease;
+  z-index: 999;
 }
 .sidebar.hidden{
   transform: translateX(-100%);
@@ -168,7 +169,6 @@ input, select{
   .sidebar{
     position: fixed; top:0; left:0; height:100%; width:260px; background:var(--panel); padding:18px; box-shadow: 2px 0 8px rgba(0,0,0,0.2); transform: translateX(-100%);
     transition: transform 0.3s ease;
-    z-index: 1000;
   }
   .sidebar.show{
     transform: translateX(0);
@@ -347,6 +347,7 @@ input, select{
           <h3>Settings</h3>
           <p>Settings panel placeholder content.</p>
         </section>
+
       </div>
 
       <!-- Right panel -->
@@ -407,20 +408,32 @@ const genTxn=()=>`TXN-${new Date().toISOString().split('T')[0].replace(/-/g,'')}
 const formatCurrency=n=>(n!==''&& !isNaN(+n))?('$'+(+n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):'' ;
 const escapeHtml=s=>s?s.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])):'';
 
-// Sidebar toggle
+// Sidebar toggle with outside click to hide
 const sidebar=$('sidebar');
 const menuBtn=$('menuBtn');
-menuBtn.addEventListener('click',()=>{
-  sidebar.classList.toggle('show');
+
+function showSidebar() {
+  sidebar.classList.add('show');
+  document.addEventListener('click', outsideClickListener);
+}
+function hideSidebar() {
+  sidebar.classList.remove('show');
+  document.removeEventListener('click', outsideClickListener);
+}
+function outsideClickListener(e) {
+  if (!sidebar.contains(e.target) && e.target !== menuBtn) {
+    hideSidebar();
+  }
+}
+
+menuBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // prevent bubbling
+  if(sidebar.classList.contains('show')){
+    hideSidebar();
+  } else {
+    showSidebar();
+  }
 });
-const overlay=document.createElement('div');
-overlay.style.position='fixed';
-overlay.style.top='0'; overlay.style.left='0'; overlay.style.width='100%'; overlay.style.height='100%';
-overlay.style.background='rgba(0,0,0,0.3)';
-overlay.style.zIndex='999';
-overlay.style.display='none';
-document.body.appendChild(overlay);
-overlay.addEventListener('click',()=>{sidebar.classList.remove('show');});
 
 // Navigation
 const sections={ Overview:$('overviewSection'), Payments:$('paymentsSection'), Settings:$('settingsSection') };
@@ -479,7 +492,7 @@ function buildReceipt() {
     delivery:$('estimated_delivery').value.trim(),
     phone:$('customer_service_phone').value.trim(),
     url:$('customer_service_url').value.trim()
-  };
+  }
   if(!$('total_charged').value){
     const a=+($('amount_sent').value)||0;
     const f=+($('transfer_fee').value)||0;
@@ -572,24 +585,59 @@ function receiptHtml(d) {
   </div>`;
 }
 
-// Event listeners
-$('newPaymentBtn').addEventListener('click',()=>{$('paymentForm').style.display = $('paymentForm').style.display==='none'?'block':'none'});
-$('generateBtn').addEventListener('click',()=>{
+// Event listeners for buttons
+$('newPaymentBtn').addEventListener('click', ()=> {
+  const form = $('paymentForm');
+  form.style.display = (form.style.display==='none' || form.style.display==='')?'block':'none';
+});
+$('generateBtn').addEventListener('click', ()=>{
   const d=buildReceipt();
   $('receiptArea').innerHTML=receiptHtml(d);
   $('receiptModal').classList.add('open');
   $('receiptModal').setAttribute('aria-hidden','false');
   addTransaction(d);
 });
-$('closeModal').addEventListener('click',()=>{$('receiptModal').classList.remove('open');$('receiptModal').setAttribute('aria-hidden','true')});
-window.addEventListener('click',e=>{if(e.target==$('receiptModal')){$('receiptModal').classList.remove('open');$('receiptModal').setAttribute('aria-hidden','true')}});
-$('copyTextBtn').addEventListener('click',()=>{const txt=$('receiptArea').innerText; navigator.clipboard.writeText(txt).then(()=>alert('Receipt text copied to clipboard.'))});
-$('downloadHtmlBtn').addEventListener('click',()=>{const html=$('receiptArea').innerHTML; const blob=new Blob([html],{type:'text/html'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='transfer_receipt.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)});
-$('printBtn').addEventListener('click',()=>{const html=$('receiptArea').innerHTML; const w=window.open('','_blank'); const doc=`<!doctype html><html><head><meta charset="utf-8"><title>Print Receipt</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#0b1220}.muted{color:#6b7280}</style></head><body>${html}</body></html>`; w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>w.print(),250)});
-$('clearBtn').addEventListener('click',()=>{document.getElementById('paymentForm').reset();});
+$('closeModal').addEventListener('click', ()=> {
+  $('receiptModal').classList.remove('open');
+  $('receiptModal').setAttribute('aria-hidden','true');
+});
+window.addEventListener('click', e => {
+  if(e.target==$('receiptModal')){
+    $('receiptModal').classList.remove('open');
+    $('receiptModal').setAttribute('aria-hidden','true');
+  }
+});
+$('copyTextBtn').addEventListener('click', ()=> {
+  const txt=$('receiptArea').innerText;
+  navigator.clipboard.writeText(txt).then(()=>alert('Receipt text copied to clipboard.'));
+});
+$('downloadHtmlBtn').addEventListener('click', ()=>{
+  const html=$('receiptArea').innerHTML;
+  const blob=new Blob([html], {type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='transfer_receipt.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+$('printBtn').addEventListener('click', ()=> {
+  const html=$('receiptArea').innerHTML;
+  const w=window.open('','_blank');
+  const doc=`<!doctype html><html><head><meta charset="utf-8"><title>Print Receipt</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#0b1220}.muted{color:#6b7280}</style></head><body>${html}</body></html>`;
+  w.document.open();
+  w.document.write(doc);
+  w.document.close();
+  setTimeout(()=>w.print(),250);
+});
+$('clearBtn').addEventListener('click', ()=> {
+  document.getElementById('paymentForm').reset();
+});
 
-// Load initial transactions
-const initialTransactions=[
+// Load some initial transactions
+const initialTransactions = [
   {desc:'Transfer to Alice Smith', date:'Oct 29, 2025', type:'External Transfer', amount:-210.00, status:'Completed'},
   {desc:'Coffee Shop purchase', date:'Oct 28, 2025', type:'Card', amount:-6.75, status:'Completed'},
   {desc:'Utility bill payment', date:'Oct 27, 2025', type:'Auto-Pay', amount:-119.45, status:'Completed'},
@@ -598,10 +646,10 @@ const initialTransactions=[
 
 function loadInitialTransactions(){
   initialTransactions.forEach(tx=>{
-    const div=document.createElement('div')
-    div.className='tx-item'
-    div.style.background=tx.status==='Pending'?'#fff7e6':''
-    const color=tx.status==='Pending'?'#d97706':'#0b5cff'
+    const div=document.createElement('div');
+    div.className='tx-item';
+    div.style.background=tx.status==='Pending'?'#fff7e6':'';
+    const color=tx.status==='Pending'?'#d97706':'#0b5cff';
     div.innerHTML=`<div>
         <div style="font-weight:600">${escapeHtml(tx.desc)}</div>
         <div class="muted">${escapeHtml(tx.date)} • ${escapeHtml(tx.status)}</div>
