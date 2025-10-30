@@ -252,6 +252,7 @@ input, select{
         <div class="small">Welcome back,</div>
         <h2 style="margin:4px 0 0">Finn</h2>
       </div>
+      <!-- Updated here: Last login section -->
       <div class="header-right">
         <div class="small">Last login</div>
         <div class="muted" id="lastLogin"></div>
@@ -472,15 +473,17 @@ document.querySelectorAll('.nav button').forEach(btn=>{
   });
 });
 
-// Last login
+// Updated Last login
 function updateLastLogin() {
-  const now=new Date();
-  const options={ month:'short', day:'2-digit', year:'numeric' };
-  let hours=now.getHours();
-  const minutes=now.getMinutes().toString().padStart(2,'0');
-  const ampm=hours>=12?'PM':'AM';
-  hours=hours%12||12;
-  $('lastLogin').textContent=`${now.toLocaleDateString(undefined,options)} — ${hours}:${minutes} ${ampm}`;
+  const now = new Date();
+  const options = { month: 'short', day: 'numeric' }; // e.g. "Oct 31"
+  let hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12; // convert to 12-hour clock
+  const formattedDate = now.toLocaleDateString(undefined, options); // "Oct 31"
+  const formattedTime = `${hours}:${minutes} ${ampm}`; // "3:30 PM"
+  $('lastLogin').textContent = `${formattedDate} at ${formattedTime}`;
 }
 updateLastLogin();
 
