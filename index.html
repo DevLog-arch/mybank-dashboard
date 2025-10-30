@@ -67,6 +67,15 @@ body{
 .header{
   display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;
 }
+.header-top{
+  /* For mobile header layout, override in media query */
+}
+.header-left{
+  display:flex; flex-direction:column;
+}
+.header-right{
+  /* default styles, overridden in media query */
+}
 .small{
   font-size:13px; color:var(--muted);
 }
@@ -175,25 +184,23 @@ input, select{
   }
   /* Toggle button */
   .header-top{
-    display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
-  .menu-toggle{
-    background:none; border:none; font-size:24px; cursor:pointer;
-  }
-  /* Adjust header spacing for mobile */
   .header{
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px; /* Space between header elements */
-    margin-bottom: 12px;
-    padding: 8px 12px; /* Optional padding for better spacing */
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
-}
-
-/* Add this for desktop to hide menu button when sidebar is visible */
-@media(min-width: 981px){
-  #menuBtn {
-    display: none;
+  .header-left{
+    display:flex; flex-direction:column;
+  }
+  .header-right{
+    text-align:right;
+  }
+  #lastLogin {
+    margin-top: 4px;
   }
 }
 </style>
@@ -239,13 +246,13 @@ input, select{
 
   <!-- Main content -->
   <main class="main">
-    <div class="header header-top">
+    <div class="header header-top" id="headerTop">
       <button class="menu-toggle" id="menuBtn" aria-label="Toggle menu">☰</button>
-      <div>
+      <div class="header-left">
         <div class="small">Welcome back,</div>
         <h2 style="margin:4px 0 0">Finn</h2>
       </div>
-      <div style="text-align:right">
+      <div class="header-right">
         <div class="small">Last login</div>
         <div class="muted" id="lastLogin"></div>
       </div>
@@ -430,7 +437,6 @@ const menuBtn=$('menuBtn');
 function showSidebar() {
   sidebar.classList.add('show');
   document.addEventListener('click', outsideClickListener);
-  // On desktop, hide menu button when sidebar is open
   if(window.innerWidth > 980){
     $('menuBtn').style.display='none';
   }
@@ -438,7 +444,6 @@ function showSidebar() {
 function hideSidebar() {
   sidebar.classList.remove('show');
   document.removeEventListener('click', outsideClickListener);
-  // On desktop, show menu button when sidebar is closed
   if(window.innerWidth > 980){
     $('menuBtn').style.display='block';
   }
@@ -450,7 +455,7 @@ function outsideClickListener(e) {
 }
 
 menuBtn.addEventListener('click', (e) => {
-  e.stopPropagation(); // prevent bubbling
+  e.stopPropagation();
   if(sidebar.classList.contains('show')){
     hideSidebar();
   } else {
@@ -688,6 +693,6 @@ function loadInitialTransactions(){
 }
 loadInitialTransactions();
 </script>
-<!-- Note: No changes needed for mobile styles; they are already handled in the media queries -->
+<!-- No extra changes needed for mobile styles; they are included in the media query -->
 </body>
 </html>
