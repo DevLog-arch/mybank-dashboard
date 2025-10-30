@@ -182,25 +182,11 @@ input, select{
   .sidebar.show{
     transform: translateX(0);
   }
-  /* Toggle button */
-  .header-top{
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .header{
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .header-left{
-    display:flex; flex-direction:column;
-  }
-  .header-right{
-    text-align:right;
-  }
-  #lastLogin {
-    margin-top: 4px;
+  /* Toggle button styles: show on mobile, hide on desktop */
+}
+@media(min-width: 981px){
+  #menuBtn {
+    display: none;
   }
 }
 </style>
@@ -588,9 +574,10 @@ function receiptHtml(d) {
   <p><strong>From Account (last 4):</strong> ****${escapeHtml(d.from)}</p>
   <p><strong>Sender:</strong> ${escapeHtml(d.sender)}</p>
   <hr>
-  <p><strong>Recipient (verified):</strong> ${escapeHtml(d.recName)}</p>
-  <p><strong>Recipient Account Number:</strong> ${escapeHtml(d.recAcct)}</p>
-  <p><strong>Recipient Bank:</strong> ${escapeHtml(d.recBank)}</p>
+  <p><strong>Recipient (verified):</strong></p>
+  <p><strong>Name:</strong> ${escapeHtml(d.recName)}</p>
+  <p><strong>Account Number:</strong> ${escapeHtml(d.recAcct)}</p>
+  <p><strong>Bank:</strong> ${escapeHtml(d.recBank)}</p>
   <hr>
   <div style="display:flex;justify-content:space-between;align-items:center">
     <div>
