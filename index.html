@@ -173,20 +173,50 @@ input, select{
   .sidebar.show{
     transform: translateX(0);
   }
-  /* Toggle button */
-  .header-top{
-    display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
-  }
-  .menu-toggle{
-    background:none; border:none; font-size:24px; cursor:pointer;
-  }
-  /* Adjust header spacing for mobile */
+  /* Header styles for mobile: flex container for top row */
   .header{
+    flex-wrap: wrap;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px; /* Space between header elements */
     margin-bottom: 12px;
-    padding: 8px 12px; /* Optional padding for better spacing */
+    gap: 8px;
+  }
+  /* Top row for mobile: hamburger + welcome + last login on one line, space between */
+  .header-top {
+    display: flex; justify-content: space-between; align-items: center; width: 100%;
+  }
+  /* Hamburger button on mobile: on left below that is welcome text, then last login on same line justified to right */
+  #menuBtn {
+    display: block;
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  /* For mobile, make the "Welcome back, Finn" and Last login on same line with space-between */
+  .header-top > div:nth-child(1),
+  .header-top > div:nth-child(2){
+    flex:1;
+  }
+  /* Additional styling for the "Welcome back, Finn" and "Last login" container */
+  .header-top {
+    display: flex;
+    width: 100%;
+  }
+  /* Adjust header container for the mobile layout to include the hamburger and right info */
+  @media(max-width:980px){
+    /* Hide #menuBtn on desktop, show on mobile */
+    #menuBtn {
+      display: block;
+    }
+  }
+}
+
+/* Add this for desktop to hide menu button when sidebar is visible */
+@media(min-width: 981px){
+  #menuBtn {
+    display: none;
   }
 }
 </style>
@@ -234,13 +264,19 @@ input, select{
   <main class="main">
     <div class="header header-top">
       <button class="menu-toggle" id="menuBtn" aria-label="Toggle menu">☰</button>
-      <div>
-        <div class="small">Welcome back,</div>
-        <h2 style="margin:4px 0 0">Finn</h2>
-      </div>
-      <div style="text-align:right">
-        <div class="small">Last login</div>
-        <div class="muted" id="lastLogin"></div>
+      <!-- Container for welcome and last login -->
+      <div class="header-top">
+        <div style="display:flex; align-items:center; gap:8px; width:100%; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="font-weight:700;">Welcome back, Finn</div>
+            <!-- Hamburger on mobile is on the left below -->
+            <button id="menuBtnMobile" aria-label="Toggle menu" style="display:none; font-size:24px; background:none; border:none; cursor:pointer;">☰</button>
+          </div>
+          <div style="text-align:right;">
+            <div class="small">Last login</div>
+            <div class="muted" id="lastLogin">Oct 31</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -267,7 +303,7 @@ input, select{
           <button class="btn" id="newPaymentBtn">New Transfer</button>
           <p class="small" style="margin-top:6px;">Pending transactions appear in yellow.</p>
           <div class="tx-list" style="margin-top:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:top;margin-bottom:8px">
               <div style="font-weight:700">Your Transfers</div>
               <div class="small" id="paymentsCount">0</div>
             </div>
@@ -423,10 +459,18 @@ const menuBtn=$('menuBtn');
 function showSidebar() {
   sidebar.classList.add('show');
   document.addEventListener('click', outsideClickListener);
+  // On desktop, hide menu button when sidebar is open
+  if(window.innerWidth > 980){
+    $('menuBtn').style.display='none';
+  }
 }
 function hideSidebar() {
   sidebar.classList.remove('show');
   document.removeEventListener('click', outsideClickListener);
+  // On desktop, show menu button when sidebar is closed
+  if(window.innerWidth > 980){
+    $('menuBtn').style.display='block';
+  }
 }
 function outsideClickListener(e) {
   if (!sidebar.contains(e.target) && e.target !== menuBtn) {
@@ -434,7 +478,7 @@ function outsideClickListener(e) {
   }
 }
 
-menuBtn.addEventListener('click', (e) => {
+$('menuBtn').addEventListener('click', (e) => {
   e.stopPropagation(); // prevent bubbling
   if(sidebar.classList.contains('show')){
     hideSidebar();
@@ -442,6 +486,21 @@ menuBtn.addEventListener('click', (e) => {
     showSidebar();
   }
 });
+
+// For mobile hamburger button
+const menuBtnMobile=$('#menuBtn');
+menuBtnMobile.style.display='none'; // hide initially
+// Show on mobile
+if(window.innerWidth <= 980){
+  menuBtnMobile.style.display='block';
+  menuBtnMobile.addEventListener('click', ()=> {
+    if(sidebar.classList.contains('show')){
+      hideSidebar();
+    } else {
+      showSidebar();
+    }
+  });
+}
 
 // Navigation
 const sections={ Overview:$('overviewSection'), Payments:$('paymentsSection'), Settings:$('settingsSection') };
@@ -455,7 +514,7 @@ document.querySelectorAll('.nav button').forEach(btn=>{
 // Last login
 function updateLastLogin() {
   const now=new Date();
-  const options={ month:'short', day:'2-digit', year:'numeric' };
+  const options={ month:'short', day:'2-digit' };
   let hours=now.getHours();
   const minutes=now.getMinutes().toString().padStart(2,'0');
   const ampm=hours>=12?'PM':'AM';
@@ -519,7 +578,7 @@ function addTransaction(d) {
   }
   updateBalances();
   const now=new Date();
-  const options={ month:'short', day:'2-digit', year:'numeric' };
+  const options={ month:'short', day:'2-digit' };
   const dateStr=now.toLocaleDateString(undefined,options);
   const color=d.status==='Pending'?'#d97706':'#0b5cff';
 
@@ -647,10 +706,10 @@ $('clearBtn').addEventListener('click', ()=> {
 
 // Load some initial transactions
 const initialTransactions = [
-  {desc:'Transfer to Alice Smith', date:'Oct 29, 2025', type:'External Transfer', amount:-210.00, status:'Completed'},
-  {desc:'Coffee Shop purchase', date:'Oct 28, 2025', type:'Card', amount:-6.75, status:'Completed'},
-  {desc:'Utility bill payment', date:'Oct 27, 2025', type:'Auto-Pay', amount:-119.45, status:'Completed'},
-  {desc:'Transfer to S. Lee', date:'Oct 26, 2025', type:'External Transfer', amount:-75.00, status:'Completed'}
+  {desc:'Transfer to Alice Smith', date:'Oct 29', type:'External Transfer', amount:-210.00, status:'Completed'},
+  {desc:'Coffee Shop purchase', date:'Oct 28', type:'Card', amount:-6.75, status:'Completed'},
+  {desc:'Utility bill payment', date:'Oct 27', type:'Auto-Pay', amount:-119.45, status:'Completed'},
+  {desc:'Transfer to S. Lee', date:'Oct 26', type:'External Transfer', amount:-75.00, status:'Completed'}
 ];
 
 function loadInitialTransactions(){
@@ -673,5 +732,6 @@ function loadInitialTransactions(){
 }
 loadInitialTransactions();
 </script>
+<!-- Note: No changes needed for mobile styles; they are already handled in the media queries -->
 </body>
 </html>
