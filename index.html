@@ -357,6 +357,30 @@ input, select{
           <p>Settings panel placeholder content.</p>
         </section>
 
+        <!-- New Statements section -->
+        <section id="statementsSection" style="display:none">
+          <h3>Statements</h3>
+          <div>
+            <h4>Monthly Statements</h4>
+            <ul>
+              <li><a href="#">January 2024 (PDF)</a></li>
+              <li><a href="#">December 2023 (PDF)</a></li>
+              <li><a href="#">November 2023 (PDF)</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Transaction History</h4>
+            <label for="statementDateRange">Select Date Range:</label>
+            <input type="month" id="startMonth" /> to <input type="month" id="endMonth" />
+            <button class="btn" id="viewTransactionsBtn">View Transactions</button>
+            <div id="transactionHistory"></div>
+          </div>
+          <div>
+            <h4>Download Statements</h4>
+            <button class="btn" id="downloadStatementsBtn">Download All (CSV)</button>
+          </div>
+        </section>
+
       </div>
 
       <!-- Right panel -->
@@ -450,13 +474,27 @@ menuBtn.addEventListener('click', (e) => {
   }
 });
 
-// Navigation
-const sections={ Overview:$('overviewSection'), Payments:$('paymentsSection'), Settings:$('settingsSection') };
+// Define sections for navigation
+const sections={
+  Overview:$('overviewSection'),
+  Payments:$('paymentsSection'),
+  Settings:$('settingsSection'),
+  Statements:$('statementsSection')
+};
+
+// Navigation button event handlers
 document.querySelectorAll('.nav button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    Object.values(sections).forEach(s=>s.style.display='none');
-    if(sections[btn.textContent]) sections[btn.textContent].style.display='block';
-  });
+  if(btn.textContent.trim() === 'Statements'){
+    btn.addEventListener('click', () => {
+      Object.values(sections).forEach(s => s.style.display='none');
+      $('statementsSection').style.display='block';
+    });
+  } else {
+    btn.addEventListener('click',()=>{
+      Object.values(sections).forEach(s=>s.style.display='none');
+      if(sections[btn.textContent]) sections[btn.textContent].style.display='block';
+    });
+  }
 });
 
 // Updated Last login
