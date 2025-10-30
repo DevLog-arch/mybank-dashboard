@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Financial Dashboard — Receipt Generator</title>
+<style>
+:root{
+  --bg:#eef2f6; --panel:#ffffff; --muted:#6b7280; --accent:#0b5cff;
+  --accent-2:#0b7bf0; --shadow:0 6px 18px rgba(8,15,30,0.08); --radius:12px;
+  --mono:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{font-family:var(--mono);margin:0;background:linear-gradient(180deg,#f4f6fb 0%,#eef2f6 100%);color:#0f1724}
+.app{display:grid;grid-template-columns:260px 1fr;gap:24px;max-width:1200px;margin:28px auto;padding:18px}
+/* Sidebar */
+.sidebar{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);height:calc(100vh - 76px);position:sticky;top:18px;overflow:auto}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.brand .logo{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+.nav{margin-top:12px}
+.nav button{display:block;width:100%;text-align:left;padding:10px;border-radius:8px;border:0;background:transparent;color:#0f1724;font-weight:600;cursor:pointer;margin-bottom:6px}
+.nav button:hover{background:#f3f6ff}
+/* Main */
+.main{padding:18px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.small{font-size:13px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:1fr 420px;gap:18px}
+.form{background:var(--panel);padding:16px;border-radius:12px;box-shadow:var(--shadow);display:none}
+.right{display:flex;flex-direction:column;gap:12px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:14px;margin-bottom:12px}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.btn{background:var(--accent);color:#fff;border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid #dbeafe}
+.muted{color:var(--muted)}
+/* Cards */
+.card{background:var(--panel);padding:16px;border-radius:12px;box-shadow:var(--shadow);flex:1}
+.tx-list{background:var(--panel);padding:12px;border-radius:12px;box-shadow:var(--shadow)}
+.tx-item{display:flex;justify-content:space-between;padding:8px;border-radius:8px}
+.tx-item:hover{background:#f8fafc}
+/* Modal */
+.modal{display:none;position:fixed;inset:0;z-index:1200;background:rgba(2,6,23,0.45);align-items:center;justify-content:center;padding:24px}
+.modal.open{display:flex}
+.modal-card{width:760px;max-width:100%;background:var(--panel);border-radius:12px;padding:18px;position:relative;box-shadow:0 18px 40px rgba(2,6,23,0.35)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.close{border:0;background:transparent;font-size:20px;cursor:pointer;color:var(--muted)}
+.receipt-wrap{position:relative;padding:18px;border-radius:8px;background:linear-gradient(180deg,#fff,#fbfcff);border:1px solid #edf2ff;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6)}
+.watermark{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) rotate(-20deg);font-size:44px;color:#cbd5e1;opacity:0.08;pointer-events:none;user-select:none}
+.receipt{font-family:Georgia,'Times New Roman',serif;color:#0b1220}
+.receipt h3{margin:0 0 6px}
+.receipt p{margin:6px 0}
+.disclaimer{background:#fff9e6;border-left:4px solid #ffd27a;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;color:#5a4700}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.btn.secondary{background:#111827}
+.download{background:#10b981;color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+@media(max-width:980px){.app{grid-template-columns:1fr;padding:12px}.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">FR</div>
+      <div>
+        <div style="font-weight:700">Finn Robinson</div>
+        <div class="small">Personal Banking</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button>Overview</button>
+      <button>Accounts</button>
+      <button>Payments</button>
+      <button>Statements</button>
+      <button>Settings</button>
+    </nav>
+    <div style="margin-top:18px">
+      <div class="small" style="margin-bottom:8px">USD Balances</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div id="checkingBalance" style="font-weight:700">$72,845.30</div>
+            <div class="muted" style="font-size:12px">Checking • ****7988</div>
+          </div>
+          <div style="background:#f0f9ff;padding:8px;border-radius:8px;color:#0366d6">$</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div id="savingsBalance" style="font-weight:700">$24,500.00</div>
+            <div class="muted" style="font-size:12px">Savings • ****2244</div>
+          </div>
+          <div style="background:#fff7ed;padding:8px;border-radius:8px;color:#c05600">$</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="header">
+      <div>
+        <div class="small">Welcome back,</div>
+        <h2 style="margin:4px 0 0">Finn</h2>
+      </div>
+      <div style="text-align:right">
+        <div class="small">Last login</div>
+        <div class="muted" id="lastLogin"></div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- Left: sections -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:18px">
+        <section id="overviewSection">
+          <h3>Account Overview</h3>
+          <p>Total USD Balance: <strong id="totalBalance">$97,345.30</strong></p>
+          <div style="display:flex;gap:12px;margin-top:12px">
+            <div class="card">
+              <div class="small">Primary Checking</div>
+              <div style="font-weight:700;font-size:18px" id="overviewChecking">$72,845.30</div>
+            </div>
+            <div class="card">
+              <div class="small">Savings</div>
+              <div style="font-weight:700;font-size:18px" id="overviewSavings">$24,500.00</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="paymentsSection" style="display:none">
+          <h3>Payments</h3>
+          <button class="btn" id="newPaymentBtn">New Transfer</button>
+          <p class="small" style="margin-top:6px;">Pending transactions appear in yellow.</p>
+          <div class="tx-list" style="margin-top:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div style="font-weight:700">Your Transfers</div>
+              <div class="small" id="paymentsCount">0</div>
+            </div>
+            <div id="paymentsList"></div>
+          </div>
+
+          <!-- Detailed Receipt Form -->
+          <section class="form" id="paymentForm">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div>
+                <strong>Create Transfer Receipt</strong>
+                <div class="small">Fill fields and generate a transaction receipt</div>
+              </div>
+            </div>
+            <label>Bank (for record)</label>
+            <input id="bank" type="text" placeholder="Enter bank name" value="Bank of America" />
+            <div class="row">
+              <div>
+                <label>Confirmation # (optional)</label>
+                <input id="confirmation_number" type="text" placeholder="CN-XXXX-XXXX"/>
+              </div>
+              <div>
+                <label>Transaction ID (optional)</label>
+                <input id="transaction_id" type="text" placeholder="TXN-YYYYMMDD-XXXX"/>
+              </div>
+            </div>
+            <label>Date / Time</label>
+            <input id="date_time" type="text" value="" />
+            <div style="margin-top:6px;font-weight:700">Sender</div>
+            <div class="row">
+              <div>
+                <label>From Account (last 4)</label>
+                <input id="from_last4" type="text" value="7988" />
+              </div>
+              <div>
+                <label>Sender</label>
+                <input id="sender_name" type="text" value="Jesse Pinkman" />
+              </div>
+            </div>
+            <div style="margin-top:6px;font-weight:700">Recipient</div>
+            <label>Recipient (verified)</label>
+            <input id="recipient_name" type="text" placeholder="Recipient name" />
+            <div class="row">
+              <div>
+                <label>Recipient Account #</label>
+                <input id="recipient_account" type="text" placeholder="****4321" />
+              </div>
+              <div>
+                <label>Recipient Bank</label>
+                <input id="recipient_bank" type="text" placeholder="Recipient bank" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>Amount Sent (USD)</label>
+                <input id="amount_sent" type="number" step="0.01" placeholder="2500.00" />
+              </div>
+              <div>
+                <label>Transfer Fee (USD)</label>
+                <input id="transfer_fee" type="number" step="0.01" placeholder="12.50" />
+              </div>
+            </div>
+            <label>Total Charged (USD)</label>
+            <input id="total_charged" type="number" step="0.01" placeholder="Auto-calc if left blank" />
+            <label>Status</label>
+            <select id="status">
+              <option>Completed</option>
+              <option>Pending</option>
+              <option>Failed</option>
+            </select>
+            <label>Estimated Delivery</label>
+            <input id="estimated_delivery" type="text" value="Funds expected to be credited within 24 hours." />
+            <label>Customer Service Phone</label>
+            <input id="customer_service_phone" type="text" value="1-315-724-4022" />
+            <label>Customer Service URL</label>
+            <input id="customer_service_url" type="text" value="https://www.bankofamerica.com" />
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn" id="generateBtn">Generate Receipt</button>
+              <button class="btn ghost" id="clearBtn">Clear</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="settingsSection" style="display:none">
+          <h3>Settings</h3>
+          <p>Settings panel placeholder content.</p>
+        </section>
+
+      </div>
+
+      <!-- Right panel -->
+      <aside class="right">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="small">Primary Checking</div>
+              <div style="font-weight:700;font-size:18px" id="checkingBalanceRight">$72,845.30</div>
+              <div class="muted">Acct • ****7988</div>
+            </div>
+            <div style="text-align:right">
+              <div class="small">Available</div>
+              <div style="font-weight:700" id="availableBalance">$72,845.30</div>
+            </div>
+          </div>
+        </div>
+        <div class="tx-list">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:700">Recent Activity</div>
+            <div class="small" id="txCount">Showing 0</div>
+          </div>
+          <div id="txItems"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<!-- Receipt Modal -->
+<div id="receiptModal" class="modal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <div>
+        <strong id="modalTitle">Money successfully Transferred</strong>
+        <div class="small muted">Transaction details below.</div>
+      </div>
+      <button class="close" id="closeModal" aria-label="Close">&times;</button>
+    </div>
+    <div class="receipt-wrap">
+      <div class="watermark"></div>
+      <div id="receiptArea" class="receipt" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="copyTextBtn">Copy Text</button>
+      <button class="download" id="downloadHtmlBtn">Download HTML</button>
+      <button class="btn secondary" id="printBtn">Print</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Helpers
+const $ = id => document.getElementById(id)
+const randHex = len => Array.from({length:len},()=> "0123456789ABCDEF"[Math.floor(Math.random()*16)]).join('')
+const genConfirmation = ()=>`CN-${randHex(4)}-${randHex(4)}`
+const genTxn = ()=>`TXN-${new Date().toISOString().split('T')[0].replace(/-/g,'')}-${randHex(6)}`
+const formatCurrency = n => (n!=='' && !isNaN(+n))?('$'+(+n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):'' 
+const escapeHtml = s=>s?String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])):''
+
+// Sidebar navigation
+const sidebarButtons = document.querySelectorAll('.sidebar .nav button');
+const sections = { Overview: $('overviewSection'), Payments: $('paymentsSection'), Settings: $('settingsSection') };
+sidebarButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    Object.values(sections).forEach(sec=>{ if(sec) sec.style.display='none'; });
+    if(sections[btn.textContent]) sections[btn.textContent].style.display='block';
+  });
+});
+
+// Last login
+function updateLastLogin() {
+  const now = new Date();
+  const options = { month:'short', day:'2-digit', year:'numeric' };
+  let hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2,'0');
+  const ampm = hours>=12?'PM':'AM';
+  hours = hours%12||12;
+  $('lastLogin').textContent = `${now.toLocaleDateString(undefined,options)} — ${hours}:${minutes} ${ampm}`;
+}
+updateLastLogin();
+
+// Balances and transactions
+let currentBalance = 72845.30
+let pendingTransactions = []
+const accountBalanceEl = $('checkingBalance')
+const accountBalanceRightEl = $('checkingBalanceRight')
+const paymentsListEl = $('paymentsList')
+const txItems = $('txItems')
+
+function updateBalances() {
+  const totalPending = pendingTransactions.reduce((sum,amt)=>sum+amt,0)
+  const availableBalance = currentBalance - totalPending
+  if(accountBalanceEl) accountBalanceEl.textContent = '$'+currentBalance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+  if(accountBalanceRightEl) accountBalanceRightEl.textContent = '$'+currentBalance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+  const availableEl = $('availableBalance')
+  if(availableEl) availableEl.textContent = '$'+availableBalance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+}
+
+// Build receipt object
+function buildReceipt(){
+  const d={ 
+    bank:$('bank').value.trim()||'Bank of America',
+    confirmation:$('confirmation_number').value.trim()||genConfirmation(),
+    txn:$('transaction_id').value.trim()||genTxn(),
+    date:$('date_time').value.trim()||new Date().toLocaleString(),
+    from:$('from_last4').value.trim()||'0000',
+    sender:$('sender_name').value.trim()||'Sender',
+    recName:$('recipient_name').value.trim()||'Recipient',
+    recAcct:$('recipient_account').value.trim()||'****0000',
+    recBank:$('recipient_bank').value.trim()||'',
+    amt:formatCurrency($('amount_sent').value.trim()),
+    fee:formatCurrency($('transfer_fee').value.trim()),
+    total:formatCurrency($('total_charged').value.trim()),
+    status:$('status').value,
+    delivery:$('estimated_delivery').value.trim(),
+    phone:$('customer_service_phone').value.trim(),
+    url:$('customer_service_url').value.trim()
+  }
+  if(!$('total_charged').value){
+    const a = +($('amount_sent').value)||0
+    const f = +($('transfer_fee').value)||0
+    d.total=formatCurrency(a+f)
+  }
+  return d
+}
+
+// Add transaction to Recent Activity and Payments
+function addTransaction(d){
+  const amtNumber = parseFloat(d.total.replace(/[^0-9.-]+/g,"")) || 0
+  if(d.status === 'Completed'){
+    currentBalance -= amtNumber
+  } else if(d.status === 'Pending'){
+    pendingTransactions.push(amtNumber)
+  }
+
+  updateBalances()
+
+  // Recent Activity
+  const now = new Date()
+  const options = { month:'short', day:'2-digit', year:'numeric' }
+  const dateStr = now.toLocaleDateString(undefined,options)
+  const color = d.status === 'Pending' ? '#d97706' : '#0b5cff'
+  const div = document.createElement('div')
+  div.className='tx-item'
+  div.innerHTML=`<div>
+      <div style="font-weight:600">Transfer to ${escapeHtml(d.recName)}</div>
+      <div class="muted">${dateStr} • ${escapeHtml(d.status)}</div>
+    </div>
+    <div style="font-weight:700;color:${color}">${d.status==='Pending'?'-'+d.total:d.total}</div>`
+  txItems.prepend(div)
+  $('txCount').textContent = `Showing ${txItems.children.length}`
+
+  // Payments list
+  const payDiv = document.createElement('div')
+  payDiv.className='tx-item'
+  payDiv.style.background = d.status==='Pending'?'#fff7e6':'transparent'
+  payDiv.innerHTML=`<div>
+      <div style="font-weight:600">${escapeHtml(d.recName)}</div>
+      <div class="muted">${dateStr} • ${escapeHtml(d.status)}</div>
+    </div>
+    <div style="font-weight:700;color:${color}">${d.total}</div>`
+  paymentsListEl.prepend(payDiv)
+  $('paymentsCount').textContent = paymentsListEl.children.length
+}
+
+// Receipt HTML
+function receiptHtml(d){
+  return `<h3>${escapeHtml(d.bank)} — Transfer Receipt</h3>
+  <div style="display:flex;justify-content:space-between;gap:12px">
+    <div style="flex:1">
+      <p style="margin:0"><strong>Confirmation Number:</strong> ${escapeHtml(d.confirmation)}</p>
+      <p style="margin:0"><strong>Transaction ID:</strong> ${escapeHtml(d.txn)}</p>
+      <p style="margin:0"><strong>Date / Time:</strong> ${escapeHtml(d.date)}</p>
+    </div>
+    <div style="flex:1;text-align:right">
+      <p style="margin:0"><strong>Status:</strong> ${escapeHtml(d.status)}</p>
+      <p style="margin:0"><strong>Estimated Delivery:</strong> ${escapeHtml(d.delivery)}</p>
+    </div>
+  </div>
+  <hr>
+  <p><strong>From Account (last 4):</strong> ****${escapeHtml(d.from)}</p>
+  <p><strong>Sender:</strong> ${escapeHtml(d.sender)}</p>
+  <hr>
+  <p><strong>Recipient (verified):</strong> ${escapeHtml(d.recName)}</p>
+  <p><strong>Recipient Account Number:</strong> ${escapeHtml(d.recAcct)}</p>
+  <p><strong>Recipient Bank:</strong> ${escapeHtml(d.recBank)}</p>
+  <hr>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <p style="margin:0"><strong>Amount Sent:</strong></p>
+      <p style="margin:0" class="muted">${escapeHtml(d.amt)}</p>
+    </div>
+    <div>
+      <p style="margin:0"><strong>Transfer Fee:</strong></p>
+      <p style="margin:0" class="muted">${escapeHtml(d.fee)}</p>
+    </div>
+    <div style="text-align:right">
+      <p style="margin:0"><strong>Total Charged:</strong></p>
+      <p style="margin:0;font-size:18px;font-weight:700">${escapeHtml(d.total)}</p>
+    </div>
+  </div>
+  <hr>
+  <div class="disclaimer">
+    <strong>Important:</strong> The bank will never ask for your password, PIN, or OTP via email. If you suspect fraud, call customer service.
+  </div>
+  <p><strong>Customer Service:</strong> ${escapeHtml(d.phone)} — ${escapeHtml(d.url)}</p>
+  <div style="margin-top:8px;padding:10px;border-radius:8px;background:#f8fafc;border:1px solid #e6eefb">
+    <p style="margin:0"><strong>Note:</strong> Your transfer has been processed and is on its way to the recipient.</p>
+    <p style="margin:0;font-size:13px;color:#475569">If funds are not received within the estimated delivery time, confirm the recipient account details and contact customer service with the confirmation and transaction numbers above.</p>
+  </div>`
+}
+
+// Event listeners
+$('newPaymentBtn').addEventListener('click',()=>{$('paymentForm').style.display = $('paymentForm').style.display==='none'?'block':'none'})
+$('generateBtn').addEventListener('click',()=>{
+  const d=buildReceipt()
+  $('receiptArea').innerHTML=receiptHtml(d)
+  $('receiptModal').classList.add('open')
+  $('receiptModal').setAttribute('aria-hidden','false')
+  addTransaction(d)
+})
+$('closeModal').addEventListener('click',()=>{$('receiptModal').classList.remove('open');$('receiptModal').setAttribute('aria-hidden','true')})
+window.addEventListener('click',e=>{if(e.target==$('receiptModal')){$('receiptModal').classList.remove('open');$('receiptModal').setAttribute('aria-hidden','true')}})
+$('copyTextBtn').addEventListener('click',()=>{const txt=$('receiptArea').innerText; navigator.clipboard.writeText(txt).then(()=>alert('Receipt text copied to clipboard.'))})
+$('downloadHtmlBtn').addEventListener('click',()=>{const html=$('receiptArea').innerHTML; const blob=new Blob([html],{type:'text/html'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='transfer_receipt.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)})
+$('printBtn').addEventListener('click',()=>{const html=$('receiptArea').innerHTML; const w=window.open('','_blank'); const doc=`<!doctype html><html><head><meta charset="utf-8"><title>Print Receipt</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#0b1220}.muted{color:#6b7280}</style></head><body>${html}</body></html>`; w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>w.print(),250)})
+$('clearBtn').addEventListener('click',()=>{document.getElementById('paymentForm').reset();});
+
+// Load some initial transactions
+const initialTransactions = [
+  {desc:'Transfer to Alice Smith', date:'Oct 29, 2025', type:'External Transfer', amount:-210.00, status:'Completed'},
+  {desc:'Coffee Shop purchase', date:'Oct 28, 2025', type:'Card', amount:-6.75, status:'Completed'},
+  {desc:'Utility bill payment', date:'Oct 27, 2025', type:'Auto-Pay', amount:-119.45, status:'Completed'},
+  {desc:'Transfer to S. Lee', date:'Oct 26, 2025', type:'External Transfer', amount:-75.00, status:'Completed'}
+];
+
+function loadInitialTransactions(){
+  initialTransactions.forEach(tx=>{
+    const div=document.createElement('div')
+    div.className='tx-item'
+    div.style.background = tx.status==='Pending'?'#fff7e6':'' 
+    const color = tx.status==='Pending'?'#d97706':'#0b5cff'
+    div.innerHTML=`<div>
+        <div style="font-weight:600">${escapeHtml(tx.desc)}</div>
+        <div class="muted">${escapeHtml(tx.date)} • ${escapeHtml(tx.status)}</div>
+      </div>
+      <div style="font-weight:700;color:${color}">${tx.amount<0?'-$'+Math.abs(tx.amount).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+tx.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`
+    txItems.appendChild(div)
+    if(tx.status==='Completed') currentBalance += tx.amount
+    else pendingTransactions.push(-tx.amount)
+  })
+  updateBalances()
+  $('txCount').textContent=`Showing ${txItems.children.length}`
+}
+loadInitialTransactions()
+</script>
+</body>
+</html>
